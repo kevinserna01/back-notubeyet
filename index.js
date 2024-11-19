@@ -1,15 +1,15 @@
 const express = require('express');
 const { urlencoded, json } = require('express');
 const cors = require('cors');
-const path = require('path');
-const serveFavicon = require('serve-favicon'); // Importa serve-favicon
 require('dotenv').config();
+const favicon = require('serve-favicon');
+const path = require('path');
 const router = require('./routes/tubeyet.routes.js'); // Cambia esta ruta según tus necesidades
 
 const app = express();
 
-// Middleware para servir el favicon
-app.use(serveFavicon(path.join(__dirname, 'public', 'favicon.ico'))); // Ajusta la ruta de tu favicon
+// Sirve el favicon si es necesario
+app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 
 // Middleware para analizar datos codificados y JSON
 app.use(urlencoded({ extended: true }));
