@@ -25,9 +25,6 @@ const upload = multer({
     },
     contentType: multerS3.AUTO_CONTENT_TYPE,
   }),
-  limits: {
-    fileSize: 50 * 1024 * 1024, // Máximo 50 MB
-  },
 });
 
 module.exports = upload;
