@@ -8,6 +8,10 @@
     ],
     "routes": [
       {
+        "src": "/favicon.ico",
+        "headers": { "status": 204 }
+      },
+      {
         "src": "/(.*)",
         "dest": "/index.js"
       }

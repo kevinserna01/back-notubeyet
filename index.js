@@ -11,6 +11,9 @@ app.use(urlencoded({ extended: true }));
 app.use(json());
 app.use(cors());
 
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
+
 // Manejador para la ruta raíz
 app.get('/', (req, res) => {
     res.send('Bienvenido al backend de NotubeYet!');
