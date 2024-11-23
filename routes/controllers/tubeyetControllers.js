@@ -6,72 +6,73 @@ const upload = require('../../aws/upload.js'); // Importar configuración de Mul
 
 // Controlador para registrar un usuario
 const registerUser = async (req, res) => {
-    const { nombre, correo, contraseña } = req.body;
-  
-    // Encriptamos la contraseña antes de guardarla
-    const hashedPassword = CryptoJS.SHA256(contraseña, process.env.CODE_SECRET_DATA).toString();
-  
-    try {
-        await connectDb(); // Conectar a la base de datos
-        const db = getDb(); // Obtener la referencia a la base de datos
-  
-        // Verificar si el correo ya está registrado
-        const existingUser = await db.collection('usuarios').findOne({ correo });
-        if (existingUser) {
-            return res.status(400).json({ status: "Error", message: "El correo ya está en uso" });
-        }
-  
-        // Crear el nuevo usuario
-        const newUser = {
-            nombre,
-            correo,
-            contraseña: hashedPassword,
-            role: 'usuario' // Establecemos el rol como 'usuario' por defecto
-        };
-  
-        // Insertamos el nuevo usuario en la colección 'usuarios'
-        await db.collection('usuarios').insertOne(newUser);
-        res.status(201).json({ status: "Éxito", message: "Usuario registrado correctamente" });
-    } catch (error) {
-        console.error('Error al registrar el usuario:', error);
-        res.status(500).json({ status: "Error", message: "Internal Server Error" });
+  const { nombre, correo, contraseña } = req.body;
+
+  // Encriptamos la contraseña antes de guardarla
+  const hashedPassword = CryptoJS.SHA256(contraseña, process.env.CODE_SECRET_DATA).toString();
+
+  try {
+    await connectDb(); // Conectar a la base de datos
+    const db = getDb(); // Obtener la referencia a la base de datos
+
+    // Verificar si el correo ya está registrado
+    const existingUser = await db.collection('usuarios').findOne({ correo });
+    if (existingUser) {
+      return res.status(400).json({ status: "Error", message: "El correo ya está en uso" });
     }
+
+    // Crear el nuevo usuario
+    const newUser = {
+      nombre,
+      correo,
+      contraseña: hashedPassword,
+      role: 'usuario' // Establecemos el rol como 'usuario' por defecto
+    };
+
+    // Insertamos el nuevo usuario en la colección 'usuarios'
+    await db.collection('usuarios').insertOne(newUser);
+    res.status(201).json({ status: "Éxito", message: "Usuario registrado correctamente" });
+  } catch (error) {
+    console.error('Error al registrar el usuario:', error);
+    res.status(500).json({ status: "Error", message: "Internal Server Error" });
+  }
 };
 
 // Controlador para login de usuario
 const loginUsuario = async (req, res) => {
-    const { correo, contraseña } = req.body;
+  const { correo, contraseña } = req.body;
 
-    try {
-        await connectDb(); // Conectar a la base de datos
-        const db = getDb(); // Obtener la referencia a la base de datos
+  try {
+    await connectDb(); // Conectar a la base de datos
+    const db = getDb(); // Obtener la referencia a la base de datos
 
-        // Buscar al usuario por correo
-        const user = await db.collection('usuarios').findOne({ correo });
-        if (!user) {
-            return res.status(400).json({ status: "Error", message: "Credenciales inválidas" });
-        }
-
-        // Comparar la contraseña cifrada
-        const hashedPassword = CryptoJS.SHA256(contraseña, process.env.CODE_SECRET_DATA).toString();
-        if (hashedPassword !== user.contraseña) {
-            return res.status(400).json({ status: "Error", message: "Credenciales inválidas" });
-        }
-
-        // Obtener el nombre del usuario
-        const nombreUsuario = user.nombre;
-
-        // Responder al frontend con el nombre del usuario
-        res.status(200).json({
-            status: "",
-            message: `Inicio de sesión exitoso, bienvenido ${nombreUsuario}`,
-        });
-    } catch (error) {
-        console.error('Error al iniciar sesión:', error);
-        res.status(500).json({ status: "Error", message: "Internal Server Error" });
+    // Buscar al usuario por correo
+    const user = await db.collection('usuarios').findOne({ correo });
+    if (!user) {
+      return res.status(400).json({ status: "Error", message: "Credenciales inválidas" });
     }
+
+    // Comparar la contraseña cifrada
+    const hashedPassword = CryptoJS.SHA256(contraseña, process.env.CODE_SECRET_DATA).toString();
+    if (hashedPassword !== user.contraseña) {
+      return res.status(400).json({ status: "Error", message: "Credenciales inválidas" });
+    }
+
+    // Obtener el nombre del usuario
+    const nombreUsuario = user.nombre;
+
+    // Responder al frontend con el nombre del usuario
+    res.status(200).json({
+      status: "",
+      message: `Inicio de sesión exitoso, bienvenido ${nombreUsuario}`,
+    });
+  } catch (error) {
+    console.error('Error al iniciar sesión:', error);
+    res.status(500).json({ status: "Error", message: "Internal Server Error" });
+  }
 };
 
+// Controlador para subir videos
 const uploadVideo = async (req, res) => {
   upload.single('video')(req, res, async (err) => {
     if (err) {
@@ -122,6 +123,8 @@ const uploadVideo = async (req, res) => {
     }
   });
 };
+
+// Controlador para obtener todos los videos
 const getVideos = async (req, res) => {
   try {
     await connectDb(); // Conectar a la base de datos
@@ -141,7 +144,34 @@ const getVideos = async (req, res) => {
   }
 };
 
-module.exports = { registerUser, loginUsuario, uploadVideo, getVideos };
-  
-  
+// Controlador para obtener los videos de un usuario específico
+const getUserVideos = async (req, res) => {
+  const { email } = req.query; // Obtener el correo del usuario desde la consulta
 
+  if (!email) {
+    return res.status(400).json({ error: 'El correo del usuario es requerido.' });
+  }
+
+  try {
+    await connectDb(); // Conectar a la base de datos
+    const db = getDb();
+
+    // Buscar los videos por el correo del usuario y ordenarlos por fecha (ascendente)
+    const userVideos = await db.collection('videos')
+      .find({ uploadedBy: email })
+      .project({ uploadDate: 1, title: 1, fileUrl: 1 }) // Incluir solo los campos necesarios
+      .sort({ uploadDate: 1 }) // Ordenar por fecha de subida (ascendente)
+      .toArray();
+
+    if (!userVideos.length) {
+      return res.status(404).json({ message: 'No se encontraron videos para este usuario.' });
+    }
+
+    return res.status(200).json(userVideos);
+  } catch (error) {
+    console.error('Error al obtener los videos del usuario:', error);
+    return res.status(500).json({ error: 'Error al obtener los videos del usuario.' });
+  }
+};
+
+module.exports = { registerUser, loginUsuario, uploadVideo, getVideos, getUserVideos };

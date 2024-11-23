@@ -1,7 +1,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
-const { registerUser, loginUsuario,uploadVideo,getVideos } = require('./controllers/tubeyetControllers');
+const { registerUser, loginUsuario,uploadVideo,getVideos,getUserVideos } = require('./controllers/tubeyetControllers');
 const upload = require('../aws/upload'); // Importa tu configuración de Multer-S3
 const router = express.Router();
 
@@ -21,6 +21,7 @@ router.post('/register', registerUser);
 router.post('/login', loginUsuario);
 router.post('/uploadVideo', uploadVideo);
 router.get('/getVideos', getVideos);
+router.get('/getUserVideos', getUserVideos);
 
 // Ruta de carga de videos a S3
 router.post('/upload', upload.single('video'), (req, res) => {
